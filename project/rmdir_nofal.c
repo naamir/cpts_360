@@ -118,18 +118,18 @@ int rm_child(MINODE *parent, char *name)
                 // 3) if in the middle of a block
                 else {
                     printf("removing entry somewhere in the MIDDLE of the block\n");
-					char *ccp;
-					int st, end, b, f;
+					char *ccp, *st, *end;
+					// NOTE: rmdir segfault at memmove() was fixed by changing st and end from int to char*
 					DIR *ldp;
 					ccp = buf;
 					ldp = (DIR *)buf;
 					// loop to last entry (ldp) - starting from the beginning
 					while(ccp + ldp->rec_len < buf + BLKSIZE) {
-						printf("in loop to last entry\n");
-						strncpy(temp, ldp->name, ldp->name_len);
+						//printf("in loop to last entry\n");
+						//strncpy(temp, ldp->name, ldp->name_len);
 						//add a null terminating char
-						temp[ldp->name_len] = 0;
-						printf("ndp:%s\n", temp);
+						//temp[ldp->name_len] = 0;
+						//printf("ndp:%s\n", temp);
 						ccp += ldp->rec_len;
 						ldp = (DIR *)ccp;
 					}
@@ -138,17 +138,12 @@ int rm_child(MINODE *parent, char *name)
 					// cp is where current entry resides
 					// st or cp + dp->rec_len is where the next entry lies
 					// end is total BLOCK size, hence remining space is end - st
+					ldp->rec_len += dp->rec_len;
 					end = buf + BLKSIZE;
 					st = cp + dp->rec_len;
-					b = cp;
-					f = end - st;
-					printf("cp:%d end:%d st:%d f:%d\n", b, end, st, f);
-					//getchar();
+					//printf("cp:%d end:%d st:%d f:%d\n", b, end, st, f);
 					memmove(cp, st, end - st);
-					putchar('d');
-					getchar();
 					put_block(dev, pip->i_block[i], buf);
-					getchar();
                 }
 				return 0;
             }
@@ -158,34 +153,10 @@ int rm_child(MINODE *parent, char *name)
             dp = (DIR *)cp;
         }
     }
-	return;
+	return 0;
 }
-/*
-void rmchild_test(char *path)
-{
-    int i, ino, pino;
-	MINODE *mip, *p_mip;
-	INODE *ip, *pip;
-	char parent[64], child[64];
 
-    if (path[0] == '/') {
-        mip = root;
-        dev = root->dev;
-    }
-    else {
-        mip = running->cwd;
-        dev = running->cwd->dev;
-    }
-
-    dbname(path, parent, child);
-
-	pino = getino(parent);
-	p_mip = iget(dev, pino);
-
-    rm_child(p_mip, child);
-}
-*/
-void remove_dir(char *path)
+int remove_dir(char *path)
 {
 	int i, ino, pino;
 	MINODE *mip, *p_mip;
@@ -195,7 +166,7 @@ void remove_dir(char *path)
 	//Checks
 	if(!path) {
 		printf("ERROR: no pathname given\n");
-		return;
+		return 0;
 	}
     
     if (path[0] == '/') {
@@ -224,7 +195,7 @@ void remove_dir(char *path)
 	//if the pointer is null then not exist
 	if(!mip) {
 		printf("ERROR: mip does not exist\n");
-		return;
+		return 0;
 	}
 	//check if dir
 	if(!S_ISDIR(mip->INODE.i_mode)) {
