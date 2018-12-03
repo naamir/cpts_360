@@ -26,16 +26,16 @@ int  myargc;                       // number of arguments
 int fd, dev, n;
 int nblocks, ninodes, bmap, imap, iblk;
 char line[256], cmd[32], pathname[256];
-char *cmds[] = {"mkdir", "rmdir", "ls", "cd", "pwd", "creat", "rm","save", "reload", "menu", "quit", NULL};
 
 #include "util.c"
 #include "cd_ls_pwd.c"
 #include "ialloc_balloc.c"
 #include "mkdir.c"
-#include "rmdir_nofal.c"
+#include "rmdir.c"
+#include "chmod.c"
 #include "creat.c"
-#include "link_unlink_symlink.c"
-#include "misc_level1.c"
+#include "stat.c"
+#include "open.c"
 
 int tokArguments(char *mystr)
 {
@@ -103,8 +103,8 @@ int mount_root()
 					 sp->s_magic, disk);
 		exit(0);
 	}
-	nblocks = sp->s_blocks_count;
-	ninodes = sp->s_inodes_count;
+	nblocks = sp->s_blocks_count;//set nblock to the block numbers in the system
+	ninodes = sp->s_inodes_count;//set ninodes to the inodes in the system
 	/*
 	 (2). get GD0 in Block #2:
 	 record bmap, imap, inodes_start as globals
@@ -147,19 +147,6 @@ void reset()
 		cmd[i] = 0;
 }
 
-int findcmd(char *command)
-{
-  for(int i=0; cmd[i]!=NULL; i++)
-    {
-      if (strcmp(cmd[i], command) == 0)
-	{
-	  printf("%s\n", cmd[i]);
-	  return i;
-	}     
-    }
-  return -1;
-}
-
 int main(int argc, char *argv[])
 {
 	int ino;
@@ -167,7 +154,7 @@ int main(int argc, char *argv[])
 	if (argc > 1)
 		disk = argv[1];
 
-	fd = open(disk, O_RDWR);
+	fd = open(disk, O_RDWR); //open the disk to read and write
 	if (fd < 0)
 	{
 		printf("open %s failed\n", disk);
@@ -178,11 +165,12 @@ int main(int argc, char *argv[])
 	init();
 	mount_root();
 	printf("root refCount = %d\n", root->refCount);
+	pimap();
+	pbmap();
 
 	while (1)
 	{
-		printf("input command : [ ls | cd | pwd | mkdir | rmdir | creat | link ]\n");
-		printf("                [ unlink | quit ] ");
+		printf("input command : [ls|cd|pwd|mkdir|creat|link|quit] ");
 		fgets(line, 128, stdin);
 		line[strlen(line) - 1] = 0;
 
@@ -197,31 +185,37 @@ int main(int argc, char *argv[])
 
 		if (strcmp(cmd, "ls") == 0)
 			ls(pathname);
+
 		if (strcmp(cmd, "cd") == 0)
 			chdir(pathname);
+
 		if (strcmp(cmd, "pwd") == 0)
 			pwd(running->cwd);
+
 		if (strcmp(cmd, "quit") == 0)
 			quit();
 		if (cmd[0] == 'q')
 			quit();
+
 		if (strcmp(cmd, "mkdir") == 0)
 			make_dir(pathname);
+		
 		if (strcmp(cmd, "creat") == 0)
 			creat_file(pathname);
+		
+		// if (strcmp(cmd, "link") == 0)
+		// 	mylink(myargs[1], myargs[2]);
+
 		if (strcmp(cmd, "rmdir") == 0)
 			remove_dir(pathname);
-		if (strcmp(cmd, "link") == 0)
-			mylink(myargs[1], myargs[2]);
-		if (strcmp(cmd, "unlink") == 0)
-			my_unlink(pathname);
-		if (strcmp(cmd, "pimap") == 0)
-			pimap();
-		if (strcmp(cmd, "pbmap") == 0)
-			pbmap();
+		/*if (strcmp(cmd, "unlink") == 0)
+			my_unlink(pathname);*/
+		if (strcmp(cmd, "chmod") == 0)
+			my_chmod(myargs[1], myargs[2]);
 		if (strcmp(cmd, "stat") == 0)
 			my_stat(pathname);
-
+		if (strcmp(cmd, "open") == 0)
+			open_file(myargs[1], myargs[2]);
 		reset();
 	}
 }
