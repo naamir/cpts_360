@@ -28,9 +28,15 @@ DIR   *dp;
 
 #define EXT2_NAME_LEN  255
 
-#define DIR_MODE    0x41ED
-#define FILE_MODE   0x81A4
+#define DIR_MODE    0x41ED  // default permissions 40755
+#define FILE_MODE   0x81A4  // default permissions 
 #define SUPER_MAGIC 0xEF53
+
+// open modes
+#define R         0
+#define W         1
+#define RW        2
+#define APPEND    3
 
 typedef struct minode{
   INODE          INODE;
@@ -90,8 +96,7 @@ int unlink(char *pathname);
 // creat function declarations
 int creat_file(char *pathname);
 int my_creat(MINODE *pip, char *name);
-int enter_name_creat(MINODE *pip, int myino, char *myname);
-
-void remove_dir(char *path);
+// rmdir function declarations
+int remove_dir(char *path);
 
 #endif

@@ -68,21 +68,6 @@ int mylink(char *oldFileName, char *newFileName)
     }
     printf("not a FILE\n");
 }
-
-int truncate(MINODE *mip)
- {
-    // deallocates all data blocks 
-    int i;
-    INODE *ip;
-
-    ip = &mip->INODE;
-    for (i = 0; i < 12; i++) {
-        printf("iblock num:%i\n", ip->i_block[i]);
-        if (ip->i_block[i] == 0) continue;
-        bdealloc(dev, ip->i_block[i]);
-        ip->i_block[i] = 0;
-    }
- }
  
 int my_unlink(char *pathname)
 {
@@ -94,17 +79,22 @@ int my_unlink(char *pathname)
     uino = getino(pathname);
     umip = iget(dev, uino);
     dbname(pathname, parent, child);
+    // get parent's inode
     pino = getino(parent);
     pmip = iget(dev, pino); 
 
     ip = &umip->INODE;
+    // should be a file
     if (ip->i_mode == FILE_MODE) {
         // decrement ilinks count
         ip->i_links_count--;
         // if ilinks are 0 then this file should be removed
-        if (ip->i_links_count == 0)
-            truncate(umip);
+        if (ip->i_links_count == 0) {
+            truncate(umip);  // remove all data blocks
+            idealloc(dev, umip->ino);  // dealloc inode of file
+        }
         rm_child(pmip, child);
+        iput(umip);
     }
     else if (ip->i_mode == DIR_MODE) {
         printf("can't be a DIR\n");
