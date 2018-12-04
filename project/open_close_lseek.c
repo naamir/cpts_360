@@ -30,14 +30,7 @@ int fdalloc(PROC *proc)   // allocate a free inode
     printf("FS panic: out of FDs\n");
     return 0;
 }
-/*
-int oftalloc(OFT *of)   // release a used open file table
-{
-    of->refCount = 0;  // just resetting the refCount is enough
-                        // to reset as that memory location is not
-                        // locked anymore
-}
-*/
+
 int my_open(char *pathname, int mode)
 {
     int ino, i;
@@ -112,3 +105,90 @@ int my_open(char *pathname, int mode)
         return ifd; // return file descriptor
     }
 }
+
+int close_file(int fd)
+{
+    if (fd < 0 || fd > NFD) {
+        printf("not a valid fd\n");
+        return -1;
+    }
+
+    if (running->fd[fd]) {  // if it exists
+        OFT *oftp = running->fd[fd];
+        running->fd[fd] = 0;
+        oftp->refCount--;
+        if (oftp->refCount > 0) return 0;
+
+        // last user of this OFT entry ==> dispose of the Minode[]
+        MINODE *mip = oftp->mptr;
+        iput(mip);
+
+        return 0; 
+    }
+}
+
+int my_lseek(int fd, int position)
+{   /*
+    From fd, find the OFT entry. 
+
+    change OFT entry's offset to position but make sure NOT to over run either end
+    of the file.
+
+    return originalPosition
+    */
+    int origPos;
+    OFT *oftp;
+    MINODE *mip;
+
+    oftp = running->fd[fd];
+    mip = oftp->mptr;
+    origPos = oftp->offset;
+
+    if (position < origPos || position > mip->INODE.i_size) {
+        printf("positions is invalid\n");
+        return -1;
+    }
+    oftp->offset = position;
+
+    return origPos;
+}
+
+int pfd()
+{
+    /* This function displays the currently opened files as follows:
+
+            fd     mode    offset    INODE
+        ----    ----    ------   --------
+            0     READ    1234   [dev, ino]  
+            1     WRITE      0   [dev, ino]
+        --------------------------------------
+    to help the user know what files has been opened.  */
+    int i;
+    MINODE *mip;
+    OFT *opft;
+    printf("    fd    mode     offset    INODE\n");
+    printf("----------------------------------\n");
+    for (i = 0; i < NFD; i++) {
+        opft = running->fd[i];
+        mip = &opft->mptr;
+        if (opft->refCount > 0) 
+            printf("%4d %4d %4d (%4d,%d)\n", 
+                    i, opft->mode, opft->offset, mip->dev, mip->ino);
+    }
+    printf("----------------------------------\n");
+}
+
+/*
+dup(int fd): 
+{
+  verify fd is an opened descriptor;
+  duplicates (copy) fd[fd] into FIRST empty fd[ ] slot;
+  increment OFT's refCount by 1;
+}
+
+dup2(int fd, int gd):
+{
+  CLOSE gd fisrt if it's already opened;
+  duplicates fd[fd] into fd[gd]; 
+}
+*/

@@ -224,8 +224,10 @@ int main(int argc, char *argv[])
 			pbmap();
 		if (strcmp(cmd, "stat") == 0)
 			my_stat(pathname);
-		if (strcmp(cmd, "cat") == 0)
-			my_stat(pathname);
+		//if (strcmp(cmd, "cat") == 0)
+			//my_stat(pathname);
+		if (strcmp(cmd, "pfd") == 0)
+			pfd();
 
 		reset();
 	}
