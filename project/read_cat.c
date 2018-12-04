@@ -7,6 +7,7 @@
 #include "type.h"
 
 extern MINODE minode[NMINODE];
+extern OFT oftp[NFD];
 extern MINODE *root;
 extern PROC   proc[NPROC], *running;
 extern char gpath[256];
@@ -18,10 +19,10 @@ extern char pathname[256];
 
 int myread(int fd, char *buf, int nbytes)
 {
-    char *cq;
+    char *cp, *cq;
     unsigned int i12, i13, *i_dbl, *di_db1, *di_db2;
-    char indbuf[BLKSIZE/4], dindbuf1[BLKSIZE/4], dindbuf2[BLKSIZE/4];
-    int pblk, lblk, start, remain, avail;
+    char indbuf[BLKSIZE/4], dindbuf1[BLKSIZE/4], dindbuf2[BLKSIZE/4], readbuf[BLKSIZE];
+    int pblk, lblk, start, remain, avail, id;
     OFT *oftp;
     MINODE *fmip;
 
@@ -40,19 +41,56 @@ int myread(int fd, char *buf, int nbytes)
     // we want to read nbytes and we have avail remining
     // NOTE: nybytes should be greater than
     while (nbytes && avail) {
+        // logical block will tell us which block our updated offset resides in
+        // NOTE: offset is just which exact byte no. we want to read or start reading
         lblk = oftp->offset / BLKSIZE; // note: offset is 0 when new file
         start = oftp->offset % BLKSIZE;
         remain = BLKSIZE - start;
 
         if (lblk < 12){                     // lbk is a direct block
-           pblk = fmip->INODE.i_block[lblk]; // map LOGICAL lbk to PHYSICAL blk
+            pblk = fmip->INODE.i_block[lblk]; // map LOGICAL lbk to PHYSICAL blk
         }
         else if (lblk >= 12 && lblk < 256 + 12) { 
-                //  indirect blocks 
+            // indirect blocks
+            i12 = fmip->INODE.i_block[12];
+            get_block(dev, i12, indbuf);
+            i_dbl = (unsigned int *)indbuf;
+
+            pblk = i_dbl[lblk];
         }
         else{ 
-                //  double indirect blocks
-        } 
+            // double indirect blocks
+            i13 = fmip->INODE.i_block[13];
+            get_block(dev, i13, dindbuf1);
+            di_db1 = (unsigned int *)dindbuf1;
+
+            for (id = 0; id < 256; id++) {
+                get_block(dev, di_db1[id], dindbuf2);
+                di_db2 = (unsigned int *)dindbuf2;
+
+                pblk = di_db2[lblk];
+            }
+        }
+
+        // get the data block into readbuf[BLKSIZE]
+        get_block(fmip->dev, pblk, readbuf);
+
+        cp = readbuf + start;  // start address to read in disk
+        remain = BLKSIZE - start;   // number of bytes that     remain in readbuf[]
+
+        while (remain > 0) {
+            
+        }
     }
 
+}
+
+int my_cat(char *pathname)
+{
+    char buf[BLKSIZE];
+    int fd;
+
+    fd = my_open(pathname, R);
+    pfd();
+    close_file(fd);
 }

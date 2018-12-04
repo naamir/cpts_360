@@ -14,6 +14,7 @@
 char *disk = "mydisk";
 
 MINODE minode[NMINODE];
+OFT oftp[NFD];
 MINODE *root;
 PROC proc[NPROC], *running;
 
@@ -37,6 +38,7 @@ char line[256], cmd[32], pathname[256];
 #include "link_unlink_symlink.c"
 #include "misc_level1.c"
 #include "open_close_lseek.c"
+#include "read_cat.c"
 
 int tokArguments(char *mystr)
 {
@@ -83,14 +85,13 @@ int init()
 		//getchar();
 		for (n = 0; n < NFD; n++)
 		{
-			OFT oftinit;
-			oftinit.refCount = 0;
-			oftinit.mode = 0;
-			oftinit.mptr = 0;
-			oftinit.offset = 0;
-			//getchar();
-			p->fd[n] = &oftinit; // note that all fds are now pointing
-								 // to same location - don't know if this is necessary
+			oftp[n].refCount = 0;
+			oftp[n].mode = 0;
+			oftp[n].mptr = 0;
+			oftp[n].offset = 0;
+
+			p->fd[n] = &oftp[n]; // note that all fds are now pointing
+							  // to same location - don't know if this is necessary
 		}
 	}
 }
@@ -185,7 +186,7 @@ int main(int argc, char *argv[])
 	while (1)
 	{
 		printf("input command : [ ls | cd | pwd | mkdir | rmdir | creat | link ]\n");
-		printf("                [ unlink | quit ] ");
+		printf("                [ unlink | cat | pfd | quit ] ");
 		fgets(line, 128, stdin);
 		line[strlen(line) - 1] = 0;
 
@@ -224,8 +225,8 @@ int main(int argc, char *argv[])
 			pbmap();
 		if (strcmp(cmd, "stat") == 0)
 			my_stat(pathname);
-		//if (strcmp(cmd, "cat") == 0)
-			//my_stat(pathname);
+		if (strcmp(cmd, "cat") == 0)
+			my_cat(pathname);
 		if (strcmp(cmd, "pfd") == 0)
 			pfd();
 

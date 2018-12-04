@@ -7,6 +7,7 @@
 #include "type.h"
 
 extern MINODE minode[NMINODE];
+extern OFT oftp[NFD];
 extern MINODE *root;
 extern PROC   proc[NPROC], *running;
 extern char gpath[256];
@@ -36,7 +37,7 @@ int my_open(char *pathname, int mode)
     int ino, i;
     MINODE *mip;
     INODE *ip;
-    OFT *oftp;
+    OFT oftp;
 
     if (pathname[0] == '/')  dev = root->dev;
     else                     dev = running->cwd->dev;
@@ -50,9 +51,10 @@ int my_open(char *pathname, int mode)
     mip = iget(dev, ino); // get the file's MINODE
 
     ip = &mip->INODE;
+    //printf("imode:%x\n", ip->i_mode);
     if (S_ISREG(ip->i_mode) && //check if it's a REG file
-        ((ip->i_mode & S_IRWXU) == S_IRUSR) &&  // if File Owner has READ permissions
-        ((ip->i_mode & S_IRWXG) == S_IRUSR))   { // if Group has READ permissions
+        ((ip->i_mode & S_IRWXU) == S_IRUSR) ||  // if File Owner has READ permissions
+        ((ip->i_mode & S_IRWXG) == S_IRGRP))   { // if Group has READ permissions
 
         for (i = 0; i < NFD; i++) {
             // checking if the pathname minode can be found in the current list
@@ -64,25 +66,25 @@ int my_open(char *pathname, int mode)
         }
 
         //oftp = oftalloc();
-        oftp->mode = mode;      // mode = 0|1|2|3 for R|W|RW|APPEND 
-        oftp->refCount = 1;
-        oftp->mptr = mip;  // point at the file's minode[]
+        oftp.mode = mode;      // mode = 0|1|2|3 for R|W|RW|APPEND 
+        oftp.refCount = 1;
+        oftp.mptr = mip;  // point at the file's minode[]
 
         switch(mode){
-            case 0 : oftp->offset = 0;     // R: offset = 0
+            case 0 : oftp.offset = 0;     // R: offset = 0
                     break;
             case 1 : truncate(mip);        // W: truncate file to 0 size
-                    oftp->offset = 0;
+                    oftp.offset = 0;
                     break;
-            case 2 : oftp->offset = 0;     // RW: do NOT truncate file
+            case 2 : oftp.offset = 0;     // RW: do NOT truncate file
                     break;
-            case 3 : oftp->offset =  mip->INODE.i_size;  // APPEND mode
+            case 3 : oftp.offset =  mip->INODE.i_size;  // APPEND mode
                     break;
             default: printf("invalid mode\n");
                     return(-1);
         }
         int ifd = fdalloc(running);
-        running->fd[ifd] = oftp;  // Let running->fd[i] point at the OFT entry
+        running->fd[ifd] = &oftp;  // Let running->fd[i] point at the OFT entry
 
         switch(mode){
             case 0: ip->i_atime = time(0L);
@@ -100,9 +102,13 @@ int my_open(char *pathname, int mode)
                     return(-1);
         }
         mip->dirty = 1;
-        iput(mip);
+        //iput(mip); IMP-->release MINODE when closing the file 
 
         return ifd; // return file descriptor
+    }
+    else {
+        printf("Not a REG file or no permissions\n");
+        return 0;   
     }
 }
 
@@ -170,9 +176,9 @@ int pfd()
     printf("----------------------------------\n");
     for (i = 0; i < NFD; i++) {
         opft = running->fd[i];
-        mip = &opft->mptr;
+        mip = opft->mptr;
         if (opft->refCount > 0) 
-            printf("%4d %4d %4d (%4d,%d)\n", 
+            printf("%4d %4d %4d    (%d,%d)\n", 
                     i, opft->mode, opft->offset, mip->dev, mip->ino);
     }
     printf("----------------------------------\n");
