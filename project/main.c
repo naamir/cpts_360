@@ -26,9 +26,9 @@ int  myargc;                       // number of arguments
 int fd, dev, n;
 int nblocks, ninodes, bmap, imap, iblk;
 char line[256], cmd[32], pathname[256];
-char *cmds[] = {"mkdir", "rmdir", "ls", "cd", "pwd", "creat", "rm","save", "reload", "menu", "quit", NULL};
+// char *cmds[] = {"mkdir", "rmdir", "ls", "cd", "pwd", "creat", "rm","save", "reload", "menu", "quit", NULL};
 
-#include "util.c"
+#include "util.c" // keep this furttst (1st)
 #include "cd_ls_pwd.c"
 #include "ialloc_balloc.c"
 #include "mkdir.c"
@@ -36,6 +36,7 @@ char *cmds[] = {"mkdir", "rmdir", "ls", "cd", "pwd", "creat", "rm","save", "relo
 #include "creat.c"
 #include "link_unlink_symlink.c"
 #include "misc_level1.c"
+#include "open_close_lseek.c"
 
 int tokArguments(char *mystr)
 {
@@ -55,7 +56,7 @@ int tokArguments(char *mystr)
 
 int init()
 {
-	int i;
+	int i, n;
 	MINODE *mip;
 	PROC *p;
 
@@ -70,12 +71,27 @@ int init()
 		mip->mounted = 0;
 		mip->mptr = 0;
 	}
+
 	for (i = 0; i < NPROC; i++)
 	{
 		p = &proc[i];
 		p->pid = i;
 		p->uid = i;
 		p->cwd = 0;
+
+		// init File Descriptors
+		//getchar();
+		for (n = 0; n < NFD; n++)
+		{
+			OFT oftinit;
+			oftinit.refCount = 0;
+			oftinit.mode = 0;
+			oftinit.mptr = 0;
+			oftinit.offset = 0;
+			//getchar();
+			p->fd[n] = &oftinit; // note that all fds are now pointing
+								 // to same location - don't know if this is necessary
+		}
 	}
 }
 
@@ -120,7 +136,7 @@ int mount_root()
 	*/
 
 	root = iget(dev, 2);
-	printf("root=%x dev=%d, ino=%d\n", root, root->dev, root->ino);
+	printf("root: dev=%d, ino=%d\n", root->dev, root->ino);
 	printf("root refCount = %d\n", root->refCount);
 
 	printf("creating P0 as running process\n");
@@ -145,19 +161,6 @@ void reset()
 	
 	for (i=0; i<32; i++)
 		cmd[i] = 0;
-}
-
-int findcmd(char *command)
-{
-  for(int i=0; cmd[i]!=NULL; i++)
-    {
-      if (strcmp(cmd[i], command) == 0)
-	{
-	  printf("%s\n", cmd[i]);
-	  return i;
-	}     
-    }
-  return -1;
 }
 
 int main(int argc, char *argv[])
@@ -220,6 +223,8 @@ int main(int argc, char *argv[])
 		if (strcmp(cmd, "pbmap") == 0)
 			pbmap();
 		if (strcmp(cmd, "stat") == 0)
+			my_stat(pathname);
+		if (strcmp(cmd, "cat") == 0)
 			my_stat(pathname);
 
 		reset();
