@@ -31,6 +31,41 @@ int pfd()
 //          1     WRITE      0   [dev, ino]
 //       --------------------------------------
 //   to help the user know what files has been opened.
+
+    MINODE *mip;
+    OFT *opft;
+    printf("\tfd\tmode\toffset\tINODE\n");
+    printf("-----------------------------------------------\n");
+	//check all open files
+	for(int i = 0; i < NFD; i++)
+	{
+		char mode[8];
+		if(running->fd[i] != NULL)//file open
+		{//get open permission
+			switch(running->fd[i]->mode)
+			{
+				case 0:
+					strcpy(mode, "READ");
+					break;
+				case 1:
+					strcpy(mode, "WRITE");
+					break;
+				case 2:
+					strcpy(mode, "RW");
+					break;
+				case 3:
+					strcpy(mode, "APPEND");
+					break;
+				default:
+					printf(" Permission check failed, invalid mode provided.\n");
+					return -1;
+			}
+			printf("\t%d\t%s\t%d\t[%d, %d]\n", i, mode, running->fd[i]->offset, running->fd[i]->mptr->dev, running->fd[i]->mptr->ino);
+		}
+}
+
+
+
 }
 
 int truncate(MINODE *mip)
@@ -262,6 +297,7 @@ int open_file(char path[124], char *mode_str
    mip->dirty = 1;
    /*9. return i as the file descriptor
    */
+  pfd();
   return fd;
 }
 
