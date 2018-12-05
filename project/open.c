@@ -21,6 +21,17 @@ extern char line[256], cmd[32], pathname[256];
 
 
    
+int pfd()
+{
+//   This function displays the currently opened files as follows:
+
+//         fd     mode    offset    INODE
+//        ----    ----    ------   --------
+//          0     READ    1234   [dev, ino]  
+//          1     WRITE      0   [dev, ino]
+//       --------------------------------------
+//   to help the user know what files has been opened.
+}
 
 int truncate(MINODE *mip)
 {
@@ -240,21 +251,14 @@ int open_file(char path[124], char *mode_str
          for R: touch atime. 
          for W|RW|APPEND mode : touch atime and mtime
       mark Minode[ ] dirty */
-   switch(mode){
-            case 0: ip->i_atime = time(0L);
-                    break;
-            case 1: ip->i_atime = time(0L);
-                    ip->i_mtime = time(0L);
-                    break;
-            case 2: ip->i_atime = time(0L);
-                    ip->i_mtime = time(0L);
-                    break;
-            case 3: ip->i_atime = time(0L);
-                    ip->i_mtime = time(0L);
-                    break;
-            default: printf("invalid mode\n");
-                    return(-1);
-        }
+      if (mode == 0)
+         ip->i_atime = time(0L);
+      else
+      {
+         ip->i_atime = time(0L);
+         ip->i_mtime = time(0L);
+      }
+   
    mip->dirty = 1;
    /*9. return i as the file descriptor
    */
