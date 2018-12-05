@@ -6,9 +6,9 @@
 #include <ext2fs/ext2_fs.h>
 #include "type.h"
 
-extern MINODE minode[NMINODE];
-extern OFT oftp[NFD];
-extern MINODE *root;
+extern MINODE   minode[NMINODE];
+extern MINODE   *root;
+extern OFT      oftp[NFD];
 extern PROC   proc[NPROC], *running;
 extern char gpath[256];
 extern char *name[64];
@@ -17,7 +17,7 @@ extern int fd, dev;
 extern int nblocks, ninodes, bmap, imap, iblk;
 extern char pathname[256];
 
-int fdalloc(PROC *proc)   // allocate a free inode
+int fdalloc(PROC *proc)   // allocate a free fd
 {
     int i;
     for (i = 0; i<NFD; i++){
@@ -37,17 +37,16 @@ int my_open(char *pathname, int mode)
     int ino, i;
     MINODE *mip;
     INODE *ip;
-    OFT oftp;
+    //OFT oftp;
 
     if (pathname[0] == '/')  dev = root->dev;
     else                     dev = running->cwd->dev;
 
     ino = getino(pathname);
-    if (ino == 0)  // if no file present then create it!
-        {
-            creat_file(pathname);
-            ino = getino(pathname);
-        }
+    if (ino == 0)  {// if no file present then create it!
+        creat_file(pathname);
+        ino = getino(pathname);
+    }
     mip = iget(dev, ino); // get the file's MINODE
 
     ip = &mip->INODE;
@@ -65,26 +64,26 @@ int my_open(char *pathname, int mode)
             }
         }
 
-        //oftp = oftalloc();
-        oftp.mode = mode;      // mode = 0|1|2|3 for R|W|RW|APPEND 
-        oftp.refCount = 1;
-        oftp.mptr = mip;  // point at the file's minode[]
+        int ifd = fdalloc(running);
+        oftp[ifd].mode = mode;      // mode = 0|1|2|3 for R|W|RW|APPEND 
+        oftp[ifd].refCount = 1;
+        oftp[ifd].mptr = mip;  // point at the file's minode[]
 
         switch(mode){
-            case 0 : oftp.offset = 0;     // R: offset = 0
+            case 0 : oftp[ifd].offset = 0;     // R: offset = 0
                     break;
             case 1 : truncate(mip);        // W: truncate file to 0 size
-                    oftp.offset = 0;
+                    oftp[ifd].offset = 0;
                     break;
-            case 2 : oftp.offset = 0;     // RW: do NOT truncate file
+            case 2 : oftp[ifd].offset = 0;     // RW: do NOT truncate file
                     break;
-            case 3 : oftp.offset =  mip->INODE.i_size;  // APPEND mode
+            case 3 : oftp[ifd].offset =  mip->INODE.i_size;  // APPEND mode
                     break;
             default: printf("invalid mode\n");
                     return(-1);
         }
-        int ifd = fdalloc(running);
-        running->fd[ifd] = &oftp;  // Let running->fd[i] point at the OFT entry
+
+        running->fd[ifd] = &oftp[ifd];  // Let running->fd[i] point at the OFT entry
 
         switch(mode){
             case 0: ip->i_atime = time(0L);
@@ -101,7 +100,7 @@ int my_open(char *pathname, int mode)
             default: printf("invalid mode\n");
                     return(-1);
         }
-        mip->dirty = 1;
+        oftp[ifd].mptr->dirty = 1;
         //iput(mip); IMP-->release MINODE when closing the file 
 
         return ifd; // return file descriptor
@@ -121,13 +120,17 @@ int close_file(int fd)
 
     if (running->fd[fd]) {  // if it exists
         OFT *oftp = running->fd[fd];
-        running->fd[fd] = 0;
+        //running->fd[fd] = 0;
         oftp->refCount--;
         if (oftp->refCount > 0) return 0;
-
+        // last user of this OFT entry - clear everything
+        oftp->mode = 0;
+        oftp->offset = 0;
+        oftp->refCount = 0; // it should already be zero - just makin sure
         // last user of this OFT entry ==> dispose of the Minode[]
         MINODE *mip = oftp->mptr;
         iput(mip);
+        oftp->mptr = 0;
 
         return 0; 
     }

@@ -7,8 +7,8 @@
 #include "type.h"
 
 extern MINODE minode[NMINODE];
-extern OFT oftp[NFD];
 extern MINODE *root;
+extern OFT oftp[NFD];
 extern PROC   proc[NPROC], *running;
 extern char gpath[256];
 extern char *name[64];
@@ -22,30 +22,27 @@ int myread(int fd, char *buf, int nbytes)
     char *cp, *cq;
     unsigned int i12, i13, *i_dbl, *di_db1, *di_db2;
     char indbuf[BLKSIZE/4], dindbuf1[BLKSIZE/4], dindbuf2[BLKSIZE/4], readbuf[BLKSIZE];
-    int pblk, lblk, start, remain, avail, id;
+    int pblk, lblk, start, remain, avail, id, count = 0;
     OFT *oftp;
     MINODE *fmip;
 
     cq = buf;
-    avail = oftp->mptr->INODE.i_size - oftp->offset; // filesize - offset
-
-    // assign the openned file in running Proc to the local variable oftp
+    // assign the openned file in running Proc to the local ptr oftp
     oftp = running->fd[fd];
+    avail = oftp->mptr->INODE.i_size - oftp->offset; // filesize - offset
+    
     // get the file's MINODE ptr
     fmip = oftp->mptr;
-    if (oftp->mode != R || oftp->mode != RW) {
-        printf("file is not open\n");
+    if (oftp->mode != R && oftp->mode != RW) {
+        printf("do not have read permissions\n");
         return 0;
     }
-
-    // we want to read nbytes and we have avail remining
-    // NOTE: nybytes should be greater than
+    
     while (nbytes && avail) {
         // logical block will tell us which block our updated offset resides in
         // NOTE: offset is just which exact byte no. we want to read or start reading
         lblk = oftp->offset / BLKSIZE; // note: offset is 0 when new file
         start = oftp->offset % BLKSIZE;
-        remain = BLKSIZE - start;
 
         if (lblk < 12){                     // lbk is a direct block
             pblk = fmip->INODE.i_block[lblk]; // map LOGICAL lbk to PHYSICAL blk
@@ -76,21 +73,45 @@ int myread(int fd, char *buf, int nbytes)
         get_block(fmip->dev, pblk, readbuf);
 
         cp = readbuf + start;  // start address to read in disk
-        remain = BLKSIZE - start;   // number of bytes that     remain in readbuf[]
-
-        while (remain > 0) {
-            
+        remain = BLKSIZE - start;   // number of bytes that remain in readbuf[]
+        //printf("nbytes:%i, avail:%i, remain:%i\n", nbytes, avail, remain);
+        while (remain > 0 && avail > 0) {
+            if (avail < nbytes) {
+                memcpy(cq, cp, avail);
+                oftp->offset += avail;
+                count += avail;
+                avail -= avail;
+                nbytes -= avail;
+                remain -= avail;
+            }
+            else { // if nbytes are greater than available bytes then read only as much are in the current block
+                memcpy(cq, cp, remain);
+                oftp->offset += remain;
+                count += remain;
+                avail -= remain;
+                nbytes -= remain;
+                remain -= remain;
+            }
+            //printf("nbytes:%i, avail:%i\n", nbytes, avail);
+            if (nbytes <= 0 || avail <= 0) // this condition will also break the outter loop
+                break;
         }
+        //getchar();
     }
-
+    printf("myread: read %d char from file descriptor %d\n", count, fd);  
+    return count;   // count is the actual number of bytes read
 }
 
 int my_cat(char *pathname)
 {
     char buf[BLKSIZE];
-    int fd;
-
-    fd = my_open(pathname, R);
+    int n, fd;
+    fd = my_open(pathname, RW);
     pfd();
+    while(n = myread(fd, buf, BLKSIZE)){
+       buf[n] = 0;             // as a null terminated string
+       printf("%s", buf);  // <=== THIS works but not good
+       //spit out chars from mybuf[ ] but handle \n properly;
+   }     
     close_file(fd);
 }

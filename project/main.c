@@ -13,10 +13,10 @@
 
 char *disk = "mydisk";
 
-MINODE minode[NMINODE];
-OFT oftp[NFD];
-MINODE *root;
-PROC proc[NPROC], *running;
+MINODE  minode[NMINODE];
+OFT 	oftp[NFD];
+MINODE  *root;
+PROC 	proc[NPROC], *running;
 
 char gpath[256]; // holder of component strings in pathname
 char *name[64];	// assume at most 64 components in pathnames
