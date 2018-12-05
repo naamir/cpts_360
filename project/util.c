@@ -202,3 +202,87 @@ int getino(char *pathname)
     //iput(mip);   ->LINE COMMENTED but was present in book
     return ino;
 }
+
+int truncate(MINODE *mip)
+{
+    // deallocates all data blocks 
+    int i, id, id1, id2;
+    unsigned int i12, i13, *i_dbl, *di_db1, *di_db2;
+    char indbuf[BLKSIZE/4], dindbuf1[BLKSIZE/4], dindbuf2[BLKSIZE/4];
+    INODE *ip;
+
+    ip = &mip->INODE;
+
+    i12 = ip->i_block[12];
+    i13 = ip->i_block[13];
+    // if unlinking a file the inode deallocate is dealt with there
+    for (i = 0; i < 12; i++) {
+        printf("iblock num:%i\n", ip->i_block[i]);
+        if (ip->i_block[i] == 0) continue;
+        bdealloc(dev, ip->i_block[i]);
+        mip->dirty = 1;
+        ip->i_block[i] = 0;
+        
+        // clear double indirect blocks, if any
+        get_block(fd, i12, indbuf);
+        i_dbl = (unsigned int *)indbuf;
+        for (int id = 0; id < 256; id++) {
+	        printf("indbuf %4d\n", i_dbl[id]);
+            if (i_dbl[id] == 0) continue;
+            bdealloc(dev, i_dbl[id]);
+            mip->dirty = 1;
+            i_dbl[id] = 0;
+        }
+
+        get_block(fd, i13, dindbuf1);
+        di_db1 = (u32 *)dindbuf1;
+        for (id1 = 0; id1 < 256; id1++) {
+	        get_block(fd, di_db1[id1], dindbuf2);
+	        di_db2 = (u32 *)dindbuf2;
+	        for (id2 = 0; id2 < 256; id2++) {
+                printf("indbuf %4d\n", di_db2[id2]);
+                if (di_db2[id2] == 0) continue;
+                bdealloc(dev, i_dbl[id]);
+                mip->dirty = 1;
+                di_db2[id2] = 0;
+            }
+        }
+        ip->i_size = 0;
+    }
+    /*// Print direct block numbers;
+      printf("direct blocks\n");
+      for (int i = 0; i < 12; i++)
+	printf("ino %4d blk %4d offset %4d ip->i_block[%i] %4d\n", ino, blk, offset, i, ip->i_block[i]);
+
+      i12 = ip->i_block[12];
+      i13 = ip->i_block[13];
+      
+      // Print indirect block numbers;
+      printf("in-direct blocks\n");
+      get_block(fd, i12, indbuf);
+      i_dbl = (u32 *)indbuf;
+      for (int i = 0; i < 256; i++)
+	printf("indbuf %4d\n", i_dbl[i]);
+      
+      
+      // Print double indirect block numbers, if any
+      printf("double in-direct blocks\n");
+      get_block(fd, i13, dindbuf1);
+      di_db1 = (u32 *)dindbuf1;
+      for (int i = 0; i < 256; i++){
+	get_block(fd, di_db1[i], dindbuf2);
+	di_db2 = (u32 *)dindbuf2;
+	for (int t = 0; t < 256; t++)
+	  printf(" %d ", di_db2[t]);
+	printf("\n");
+      }*/
+}
+
+int dbname(char *pathname, char *dname, char *bname)
+{
+    char temp[128]; // dirname(), basename() destroy original pathname
+    strcpy(temp, pathname);
+    strcpy(dname, dirname(temp));
+    strcpy(temp, pathname);
+    strcpy(bname, basename(temp));
+}

@@ -17,15 +17,6 @@ extern int nblocks, ninodes, bmap, imap, iblk;
 extern char pathname[256];
 
 /*************************FUNCTIONS*******************************/
-int dbname(char *pathname, char *dname, char *bname)
-{
-    char temp[128]; // dirname(), basename() destroy original pathname
-    strcpy(temp, pathname);
-    strcpy(dname, dirname(temp));
-    strcpy(temp, pathname);
-    strcpy(bname, basename(temp));
-}
-
 int make_dir(char *pathname)
 {
     int pino;

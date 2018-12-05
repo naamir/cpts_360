@@ -26,16 +26,17 @@ int  myargc;                       // number of arguments
 int fd, dev, n;
 int nblocks, ninodes, bmap, imap, iblk;
 char line[256], cmd[32], pathname[256];
+// char *cmds[] = {"mkdir", "rmdir", "ls", "cd", "pwd", "creat", "rm","save", "reload", "menu", "quit", NULL};
 
-#include "util.c"
+#include "util.c" // keep this furttst (1st)
 #include "cd_ls_pwd.c"
 #include "ialloc_balloc.c"
 #include "mkdir.c"
-#include "rmdir.c"
-#include "chmod.c"
+#include "rmdir_nofal.c"
 #include "creat.c"
-#include "stat.c"
-#include "open.c"
+#include "link_unlink_symlink.c"
+#include "misc_level1.c"
+#include "open_close_lseek.c"
 
 int tokArguments(char *mystr)
 {
@@ -55,7 +56,7 @@ int tokArguments(char *mystr)
 
 int init()
 {
-	int i;
+	int i, n;
 	MINODE *mip;
 	PROC *p;
 
@@ -70,12 +71,27 @@ int init()
 		mip->mounted = 0;
 		mip->mptr = 0;
 	}
+
 	for (i = 0; i < NPROC; i++)
 	{
 		p = &proc[i];
 		p->pid = i;
 		p->uid = i;
 		p->cwd = 0;
+
+		// init File Descriptors
+		//getchar();
+		for (n = 0; n < NFD; n++)
+		{
+			OFT oftinit;
+			oftinit.refCount = 0;
+			oftinit.mode = 0;
+			oftinit.mptr = 0;
+			oftinit.offset = 0;
+			//getchar();
+			p->fd[n] = &oftinit; // note that all fds are now pointing
+								 // to same location - don't know if this is necessary
+		}
 	}
 }
 
@@ -103,8 +119,8 @@ int mount_root()
 					 sp->s_magic, disk);
 		exit(0);
 	}
-	nblocks = sp->s_blocks_count;//set nblock to the block numbers in the system
-	ninodes = sp->s_inodes_count;//set ninodes to the inodes in the system
+	nblocks = sp->s_blocks_count;
+	ninodes = sp->s_inodes_count;
 	/*
 	 (2). get GD0 in Block #2:
 	 record bmap, imap, inodes_start as globals
@@ -120,7 +136,7 @@ int mount_root()
 	*/
 
 	root = iget(dev, 2);
-	printf("root=%x dev=%d, ino=%d\n", root, root->dev, root->ino);
+	printf("root: dev=%d, ino=%d\n", root->dev, root->ino);
 	printf("root refCount = %d\n", root->refCount);
 
 	printf("creating P0 as running process\n");
@@ -154,7 +170,7 @@ int main(int argc, char *argv[])
 	if (argc > 1)
 		disk = argv[1];
 
-	fd = open(disk, O_RDWR); //open the disk to read and write
+	fd = open(disk, O_RDWR);
 	if (fd < 0)
 	{
 		printf("open %s failed\n", disk);
@@ -165,12 +181,11 @@ int main(int argc, char *argv[])
 	init();
 	mount_root();
 	printf("root refCount = %d\n", root->refCount);
-	pimap();
-	pbmap();
 
 	while (1)
 	{
-		printf("input command : [ls|cd|pwd|mkdir|creat|link|quit] ");
+		printf("input command : [ ls | cd | pwd | mkdir | rmdir | creat | link ]\n");
+		printf("                [ unlink | quit ] ");
 		fgets(line, 128, stdin);
 		line[strlen(line) - 1] = 0;
 
@@ -185,37 +200,33 @@ int main(int argc, char *argv[])
 
 		if (strcmp(cmd, "ls") == 0)
 			ls(pathname);
-
 		if (strcmp(cmd, "cd") == 0)
 			chdir(pathname);
-
 		if (strcmp(cmd, "pwd") == 0)
 			pwd(running->cwd);
-
 		if (strcmp(cmd, "quit") == 0)
 			quit();
 		if (cmd[0] == 'q')
 			quit();
-
 		if (strcmp(cmd, "mkdir") == 0)
 			make_dir(pathname);
-		
 		if (strcmp(cmd, "creat") == 0)
 			creat_file(pathname);
-		
-		// if (strcmp(cmd, "link") == 0)
-		// 	mylink(myargs[1], myargs[2]);
-
 		if (strcmp(cmd, "rmdir") == 0)
 			remove_dir(pathname);
-		/*if (strcmp(cmd, "unlink") == 0)
-			my_unlink(pathname);*/
-		if (strcmp(cmd, "chmod") == 0)
-			my_chmod(myargs[1], myargs[2]);
+		if (strcmp(cmd, "link") == 0)
+			mylink(myargs[1], myargs[2]);
+		if (strcmp(cmd, "unlink") == 0)
+			my_unlink(pathname);
+		if (strcmp(cmd, "pimap") == 0)
+			pimap();
+		if (strcmp(cmd, "pbmap") == 0)
+			pbmap();
 		if (strcmp(cmd, "stat") == 0)
 			my_stat(pathname);
-		if (strcmp(cmd, "open") == 0)
-			open_file(myargs[1], myargs[2]);
+		if (strcmp(cmd, "cat") == 0)
+			my_stat(pathname);
+
 		reset();
 	}
 }
