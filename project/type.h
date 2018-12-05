@@ -24,19 +24,14 @@ DIR   *dp;
 #define NFD        16
 #define NMOUNT      4
 #define NPROC       2
-#define SUPER_USER  0
+#define NOFT 50
 
 #define EXT2_NAME_LEN  255
 
-#define DIR_MODE    0x41ED  // default permissions 40755
-#define FILE_MODE   0x81A4  // default permissions 
+#define DIR_MODE    0x41ED
+#define FILE_MODE   0x81A4
 #define SUPER_MAGIC 0xEF53
-
-// open modes
-#define R         0
-#define W         1
-#define RW        2
-#define APPEND    3
+#define SUPER_USER 0
 
 typedef struct minode{
   INODE          INODE;
@@ -78,25 +73,23 @@ typedef struct mtable{
   char      mntName[64];    // mount point DIR name
 }MTABLE;
 
-// mkdir function declarations
 int dbname(char *pathname, char *dname, char *bname);
-int make_dir(char *pathname);
-int mymkdir(MINODE *pip, char *name);
-int enter_name(MINODE *pip, int myino, char *myname);
-// util function declarations
 int iput(MINODE *mip);
 MINODE* iget(int dev, int ino);
 int getino(char *pathname);
 int search(MINODE *mip, char *name);
 int get_block(int dev, int blk, char *buf);
 int put_block(int dev, int blk, char *buf);
-// link unlink symlink function declarations
-int mylink(char *oldFileName, char *newFileName);
-int unlink(char *pathname);
-// creat function declarations
-int creat_file(char *pathname);
-int my_creat(MINODE *pip, char *name);
-// rmdir function declarations
-int remove_dir(char *path);
 
+
+int mylink(char *oldFileName, char *newFileName);
+int make_dir(char *pathname);
+int creat_file(char *pathname);
+int my_unlink(char *pathname);
+void my_symlink (char *old_file, char *new_file);
+int my_chmod(char *mode, char *pathname);
+int my_stat(char *pathname);
+int open_file(char path[124], char *third);
+
+OFT OpenFileTable[NOFT];
 #endif
