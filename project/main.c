@@ -40,6 +40,7 @@ char line[256], cmd[32], pathname[256];
 #include "open_close_lseek.c"
 #include "read_cat.c"
 #include "write_cp_mv.c"
+#include "touch.c"
 
 int tokArguments(char *mystr)
 {
@@ -241,7 +242,8 @@ int main(int argc, char *argv[])
 			pfd();
 		if (strcmp(cmd, "cp") == 0)
 			my_cp(myargs[1], myargs[2]);
-
+		if (strcmp(cmd, "touch") == 0)
+			touch_file(pathname);
 		reset();
 	}
 }
