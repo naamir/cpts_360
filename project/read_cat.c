@@ -53,20 +53,23 @@ int myread(int fd, char *buf, int nbytes)
             get_block(dev, i12, indbuf);
             i_dbl = (unsigned int *)indbuf;
 
-            pblk = i_dbl[lblk];
+            pblk = i_dbl[lblk-12];
         }
-        else{ 
+        else { 
             // double indirect blocks
             i13 = fmip->INODE.i_block[13];
             get_block(dev, i13, dindbuf1);
             di_db1 = (unsigned int *)dindbuf1;
+            lblk -= (256 + 12);
+            di_db2 = (unsigned int *)di_db1[lblk/256];
+            get_block(dev, di_db2, dindbuf2);
+            pblk = dindbuf2[(lblk-12) % 256];
+            //for (id = 0; id < 256; id++) {
+                //get_block(dev, di_db1[id], dindbuf2);
+                //di_db2 = (unsigned int *)dindbuf2;
 
-            for (id = 0; id < 256; id++) {
-                get_block(dev, di_db1[id], dindbuf2);
-                di_db2 = (unsigned int *)dindbuf2;
-
-                pblk = di_db2[lblk];
-            }
+                //pblk = di_db2[lblk - 268];
+            //}
         }
 
         // get the data block into readbuf[BLKSIZE]
@@ -113,5 +116,5 @@ int my_cat(char *pathname)
        printf("%s", buf);  // <=== THIS works but not good
        //spit out chars from mybuf[ ] but handle \n properly;
    }     
-    close_file(fd);
+    my_close(fd);
 }
