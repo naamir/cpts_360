@@ -39,6 +39,7 @@ char line[256], cmd[32], pathname[256];
 #include "misc_level1.c"
 #include "open_close_lseek.c"
 #include "read_cat.c"
+#include "touch.c"
 
 int tokArguments(char *mystr)
 {
@@ -229,7 +230,8 @@ int main(int argc, char *argv[])
 			my_cat(pathname);
 		if (strcmp(cmd, "pfd") == 0)
 			pfd();
-
+		if (strcmp(cmd, "touch") == 0)
+			touch_file(pathname);
 		reset();
 	}
 }

@@ -116,5 +116,5 @@ int my_cat(char *pathname)
        printf("%s", buf);  // <=== THIS works but not good
        //spit out chars from mybuf[ ] but handle \n properly;
    }     
-    my_close(fd);
+    close_file(fd);
 }
