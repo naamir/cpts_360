@@ -109,7 +109,8 @@ int my_cat(char *pathname)
 {
     char buf[BLKSIZE];
     int n, fd;
-    fd = my_open(pathname, RW);
+    fd = my_open(pathname, R);
+    if (fd < 0) return 0;
     pfd();
     while(n = myread(fd, buf, BLKSIZE)){
        buf[n] = 0;             // as a null terminated string

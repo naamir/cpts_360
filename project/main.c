@@ -39,6 +39,7 @@ char line[256], cmd[32], pathname[256];
 #include "misc_level1.c"
 #include "open_close_lseek.c"
 #include "read_cat.c"
+#include "write_cp_mv.c"
 
 int tokArguments(char *mystr)
 {
@@ -185,8 +186,9 @@ int main(int argc, char *argv[])
 
 	while (1)
 	{
-		printf("input command : [ ls | cd | pwd | mkdir | rmdir | creat | link ]\n");
-		printf("                [ unlink | cat | pfd | quit ] ");
+		printf("Commands : [ ls | cd | pwd | mkdir | rmdir | creat | link ]\n");
+		printf("                [ unlink | symlink | chmod | cat | cp | quit ]\n");
+		printf("      \nHelpers: [pimap|pbmap|pfd|stat]   Enter Command: ");
 		fgets(line, 128, stdin);
 		line[strlen(line) - 1] = 0;
 
@@ -197,6 +199,10 @@ int main(int argc, char *argv[])
 		}
 		else {
 			strcpy(cmd, myargs[0]);
+			//if (strcpy(myargs[1], "") == 0 || strcpy(myargs[2], "") == 0) {
+				//printf("more arguments required\n");
+				//continue;
+			//}
 		}
 
 		if (strcmp(cmd, "ls") == 0)
@@ -219,6 +225,10 @@ int main(int argc, char *argv[])
 			mylink(myargs[1], myargs[2]);
 		if (strcmp(cmd, "unlink") == 0)
 			my_unlink(pathname);
+		if (strcmp(cmd, "symlink") == 0)
+			my_symlink(myargs[1], myargs[2]);
+		if (strcmp(cmd, "chmod") == 0)
+			my_chmod(myargs[1], myargs[2]);
 		if (strcmp(cmd, "pimap") == 0)
 			pimap();
 		if (strcmp(cmd, "pbmap") == 0)
@@ -229,6 +239,8 @@ int main(int argc, char *argv[])
 			my_cat(pathname);
 		if (strcmp(cmd, "pfd") == 0)
 			pfd();
+		if (strcmp(cmd, "cp") == 0)
+			my_cp(myargs[1], myargs[2]);
 
 		reset();
 	}

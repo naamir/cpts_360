@@ -99,7 +99,7 @@ int ialloc(int dev)
 
         put_block(dev, imap, buf);
 
-        return i+1;
+        return (i+1);
         }
     }
     printf("ialloc(): no more free inodes\n");
@@ -183,7 +183,7 @@ int balloc(int dev)
 
             put_block(dev, bmap, buf);
 
-            return b+1;
+            return (b+1);
         }
     }
     printf("balloc(): no more free blocks\n");

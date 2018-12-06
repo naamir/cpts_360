@@ -42,13 +42,34 @@ int my_stat(char *pathname)
     myst.st_blocks = mip->INODE.i_blocks;
     myst.st_mode = mip->INODE.i_mode;
     myst.st_nlink = mip->INODE.i_links_count;
-
+    
     printf("mode=0x%4x\n", myst.st_mode);
     printf("uid=%d  gid=%d\n", myst.st_uid, myst.st_gid);
     printf("size=%d\n", myst.st_size);
     printf("time=%s", ctime(&myst.st_ctime));
     printf("link=%d\n", myst.st_nlink);
     printf("no of blocks=%d\n", myst.st_blocks);
+    printf("INODE block[0]:%i\n",  mip->INODE.i_block[0]);
 
     iput(mip);
+}
+
+int my_chmod(char *mode, char *pathname)
+{
+	int ino;
+	MINODE *mip; //mip will point to the child Inode
+	short perm = 0;
+
+	ino = getino(pathname);
+	mip = iget(dev, ino);
+	
+	printf("\nprevious permissions: %o\n", mip->INODE.i_mode);
+	sscanf(mode, "%o", &perm);
+
+	mip->INODE.i_mode = (mip->INODE.i_mode & 0xF000) | perm;
+	iput(mip);
+	printf("new permissions: %o\n", mip->INODE.i_mode);
+
+    return 0;
+
 }

@@ -59,8 +59,10 @@ int my_open(char *pathname, int mode)
             // checking if the pathname minode can be found in the current list
             // of open fds in the running PROC - so we can check if file is already open
             if (mip == running->fd[i]->mptr) {
-                printf("file already open\n");
-                return 0;
+                if (running->fd[i]->mode != R) { 
+                    printf("file already open\n");
+                    return 0;
+                }
             }
         }
 
@@ -111,14 +113,14 @@ int my_open(char *pathname, int mode)
     }
 }
 
-int close_file(int fd)
+int my_close(int fd)
 {
     if (fd < 0 || fd > NFD) {
         printf("not a valid fd\n");
         return -1;
     }
 
-    if (running->fd[fd]) {  // if it exists
+    //if (running->fd[fd]) {  // if it exists
         OFT *oftp = running->fd[fd];
         //running->fd[fd] = 0;
         oftp->refCount--;
@@ -133,7 +135,7 @@ int close_file(int fd)
         oftp->mptr = 0;
 
         return 0; 
-    }
+    //}
 }
 
 int my_lseek(int fd, int position)
