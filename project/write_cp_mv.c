@@ -66,23 +66,36 @@ int mywrite(int fd, char *buf, int nbytes)
             if (pblk == 0) { // if no data block yet
                 i_dbl[lblk - 12] = balloc(fmip->dev);
                 pblk = i_dbl[lblk - 12];
-                put_block(fmip->dev, i12, indbuf);
+                put_block(fmip->dev, i12, i_dbl);
             }
         }
         else {
             // double indirect blocks
             i13 = fmip->INODE.i_block[13];
+            if (i13 == 0) {
+                i13 = fmip->INODE.i_block[13] = balloc(fmip->dev);
+                memset(zbuf, 0, BLKSIZE);       // zero out buffer
+                put_block(fmip->dev, i13, zbuf);  // zero out block on disk
+            }
             get_block(dev, i13, dindbuf1);
             di_db1 = (unsigned int *)dindbuf1;
-
-            for (id = 0; id < 256; id++) {
-                get_block(dev, di_db1[id], dindbuf2);
-                di_db2 = (unsigned int *)dindbuf2;
-                if (di_db2[lblk] == 0)
-                    di_db2[lblk] = balloc(fmip->dev);
-                    
-                pblk = di_db2[lblk];
+            lblk -= (256 + 12);
+            di_db2 = (unsigned int *)di_db1[lblk/256];
+            get_block(dev, di_db2, dindbuf2);
+            pblk = dindbuf2[lblk % 256];
+            if (pblk == 0) {
+                dindbuf2[lblk % 256] = balloc(fmip->dev);
+                pblk = dindbuf2[lblk % 256];
+                put_block(fmip->dev, i13, dindbuf2);
             }
+            //for (id = 0; id < 256; id++) {
+                //get_block(dev, di_db1[id], dindbuf2);
+                //di_db2 = (unsigned int *)dindbuf2;
+                //if (di_db2[lblk] == 0)
+                //    di_db2[lblk] = balloc(fmip->dev);
+                    
+               // pblk = di_db2[lblk];
+            //}
         }
 
         // get the data block into wbuf[BLKSIZE]

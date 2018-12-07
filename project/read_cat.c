@@ -50,7 +50,7 @@ int myread(int fd, char *buf, int nbytes)
         else if (lblk >= 12 && lblk < 256 + 12) { 
             // indirect blocks
             i12 = fmip->INODE.i_block[12];
-            get_block(dev, i12, indbuf);
+            get_block(fmip->dev, i12, indbuf);
             i_dbl = (unsigned int *)indbuf;
 
             pblk = i_dbl[lblk-12];
@@ -58,12 +58,12 @@ int myread(int fd, char *buf, int nbytes)
         else { 
             // double indirect blocks
             i13 = fmip->INODE.i_block[13];
-            get_block(dev, i13, dindbuf1);
+            get_block(fmip->dev, i13, dindbuf1);
             di_db1 = (unsigned int *)dindbuf1;
             lblk -= (256 + 12);
             di_db2 = (unsigned int *)di_db1[lblk/256];
-            get_block(dev, di_db2, dindbuf2);
-            pblk = dindbuf2[(lblk-12) % 256];
+            get_block(fmip->dev, di_db2, dindbuf2);
+            pblk = dindbuf2[lblk % 256];
             //for (id = 0; id < 256; id++) {
                 //get_block(dev, di_db1[id], dindbuf2);
                 //di_db2 = (unsigned int *)dindbuf2;
