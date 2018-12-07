@@ -20,8 +20,8 @@ extern char pathname[256];
 int mywrite(int fd, char *buf, int nbytes) 
 {
     char *cp, *cq, zbuf[BLKSIZE];
-    unsigned int i12, i13, *i_dbl, *di_db1, *di_db2;
-    char indbuf[BLKSIZE/4], dindbuf1[BLKSIZE/4], dindbuf2[BLKSIZE/4], wbuf[BLKSIZE];
+    int i12, i13, *i_dbl, *di_db1, *di_db2, di_nb1, di_nb2;
+    char indbuf[BLKSIZE], dindbuf1[BLKSIZE], dindbuf2[BLKSIZE], wbuf[BLKSIZE];
     int pblk, lblk, start, remain, id, count = 0; //avail
     OFT *oftp;
     MINODE *fmip;
@@ -59,43 +59,44 @@ int mywrite(int fd, char *buf, int nbytes)
                 put_block(fmip->dev, i12, zbuf);  // zero out block on disk
             }
             get_block(dev, i12, indbuf);
-            i_dbl = (unsigned int *)indbuf;
+            i_dbl = (int *)indbuf;
             //pblk = i_dbl[lblk];
             
             pblk = i_dbl[lblk - 12];
             if (pblk == 0) { // if no data block yet
                 i_dbl[lblk - 12] = balloc(fmip->dev);
                 pblk = i_dbl[lblk - 12];
-                put_block(fmip->dev, i12, i_dbl);
+                put_block(fmip->dev, i12, indbuf);
             }
         }
         else {
             // double indirect blocks
             i13 = fmip->INODE.i_block[13];
             if (i13 == 0) {
-                i13 = fmip->INODE.i_block[13] = balloc(fmip->dev);
+                fmip->INODE.i_block[13] = balloc(fmip->dev);
+                i13 = fmip->INODE.i_block[13];
                 memset(zbuf, 0, BLKSIZE);       // zero out buffer
                 put_block(fmip->dev, i13, zbuf);  // zero out block on disk
             }
-            get_block(dev, i13, dindbuf1);
-            di_db1 = (unsigned int *)dindbuf1;
+            get_block(dev, i13, dindbuf1);            
+            di_db1 = (int *)dindbuf1;
             lblk -= (256 + 12);
-            di_db2 = (unsigned int *)di_db1[lblk/256];
-            get_block(dev, di_db2, dindbuf2);
-            pblk = dindbuf2[lblk % 256];
-            if (pblk == 0) {
-                dindbuf2[lblk % 256] = balloc(fmip->dev);
-                pblk = dindbuf2[lblk % 256];
-                put_block(fmip->dev, i13, dindbuf2);
+            di_nb1 = di_db1[lblk / 256];
+            if (di_nb1 == 0) {
+                di_nb1 = balloc(fmip->dev);
+                memset(zbuf, 0, BLKSIZE);       // zero out buffer
+                put_block(fmip->dev, di_nb1, zbuf);  // zero out block on disk
             }
-            //for (id = 0; id < 256; id++) {
-                //get_block(dev, di_db1[id], dindbuf2);
-                //di_db2 = (unsigned int *)dindbuf2;
-                //if (di_db2[lblk] == 0)
-                //    di_db2[lblk] = balloc(fmip->dev);
-                    
-               // pblk = di_db2[lblk];
-            //}
+
+            //di_db2 = (int *)di_db1[lblk/256];
+            get_block(dev, di_nb1, dindbuf2);
+            di_db2 = (int *)dindbuf2;
+            pblk = di_db2[lblk % 256];
+            if (pblk == 0) {
+                pblk = balloc(fmip->dev);
+                memset(zbuf, 0, BLKSIZE);       // zero out buffer
+                put_block(fmip->dev, pblk, zbuf);  // zero out block on disk
+            }
         }
 
         // get the data block into wbuf[BLKSIZE]

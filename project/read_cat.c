@@ -20,8 +20,8 @@ extern char pathname[256];
 int myread(int fd, char *buf, int nbytes)
 {
     char *cp, *cq;
-    unsigned int i12, i13, *i_dbl, *di_db1, *di_db2;
-    char indbuf[BLKSIZE/4], dindbuf1[BLKSIZE/4], dindbuf2[BLKSIZE/4], readbuf[BLKSIZE];
+    int i12, i13, *i_dbl, *di_db1, *di_db2, di_nb1, di_nb2;
+    char indbuf[BLKSIZE], dindbuf1[BLKSIZE], dindbuf2[BLKSIZE], readbuf[BLKSIZE];
     int pblk, lblk, start, remain, avail, id, count = 0;
     OFT *oftp;
     MINODE *fmip;
@@ -51,25 +51,23 @@ int myread(int fd, char *buf, int nbytes)
             // indirect blocks
             i12 = fmip->INODE.i_block[12];
             get_block(fmip->dev, i12, indbuf);
-            i_dbl = (unsigned int *)indbuf;
+            i_dbl = (int *)indbuf;
 
             pblk = i_dbl[lblk-12];
         }
-        else { 
+        else {
             // double indirect blocks
             i13 = fmip->INODE.i_block[13];
             get_block(fmip->dev, i13, dindbuf1);
-            di_db1 = (unsigned int *)dindbuf1;
+            // cast the read buffer as an unsigned int ptr, so we have the start address of the array of block numbers
+            // of the 1st level and they shall provide the block numbers to the next level
+            di_db1 = (int *)dindbuf1; // this is the array
             lblk -= (256 + 12);
-            di_db2 = (unsigned int *)di_db1[lblk/256];
-            get_block(fmip->dev, di_db2, dindbuf2);
-            pblk = dindbuf2[lblk % 256];
-            //for (id = 0; id < 256; id++) {
-                //get_block(dev, di_db1[id], dindbuf2);
-                //di_db2 = (unsigned int *)dindbuf2;
-
-                //pblk = di_db2[lblk - 268];
-            //}
+            // get the block number for the level 1 buffer
+            di_nb1 = di_db1[lblk / 256];  // this is the BLOCK - say it one more time
+            get_block(fmip->dev, di_nb1, dindbuf2);
+            di_db2 = (int *)dindbuf2;
+            pblk = di_db2[lblk%256];
         }
 
         // get the data block into readbuf[BLKSIZE]
@@ -79,13 +77,21 @@ int myread(int fd, char *buf, int nbytes)
         remain = BLKSIZE - start;   // number of bytes that remain in readbuf[]
         //printf("nbytes:%i, avail:%i, remain:%i\n", nbytes, avail, remain);
         while (remain > 0 && avail > 0) {
-            if (avail < nbytes) {
+            if (avail < nbytes && avail < remain) { //if the file size is less than the bytes to read and if the filze size stays in the same block
                 memcpy(cq, cp, avail);
                 oftp->offset += avail;
                 count += avail;
-                avail -= avail;
                 nbytes -= avail;
                 remain -= avail;
+                avail -= avail;
+            }
+            else if (avail > nbytes && nbytes < remain) { //if the file is big than the given bytes and bytes to read are in the same block
+                memcpy(cq, cp, nbytes);
+                oftp->offset += nbytes;
+                count += nbytes;
+                avail -= nbytes;
+                remain -= nbytes;
+                nbytes -= nbytes;
             }
             else { // if nbytes are greater than available bytes then read only as much are in the current block
                 memcpy(cq, cp, remain);
