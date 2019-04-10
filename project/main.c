@@ -13,9 +13,10 @@
 
 char *disk = "mydisk";
 
-MINODE minode[NMINODE];
-MINODE *root;
-PROC proc[NPROC], *running;
+MINODE  minode[NMINODE];
+OFT 	oftp[NFD];
+MINODE  *root;
+PROC 	proc[NPROC], *running;
 
 char gpath[256]; // holder of component strings in pathname
 char *name[64];	// assume at most 64 components in pathnames
@@ -37,6 +38,9 @@ char line[256], cmd[32], pathname[256];
 #include "link_unlink_symlink.c"
 #include "misc_level1.c"
 #include "open_close_lseek.c"
+#include "read_cat.c"
+#include "write_cp_mv.c"
+#include "touch.c"
 
 int tokArguments(char *mystr)
 {
@@ -83,14 +87,13 @@ int init()
 		//getchar();
 		for (n = 0; n < NFD; n++)
 		{
-			OFT oftinit;
-			oftinit.refCount = 0;
-			oftinit.mode = 0;
-			oftinit.mptr = 0;
-			oftinit.offset = 0;
-			//getchar();
-			p->fd[n] = &oftinit; // note that all fds are now pointing
-								 // to same location - don't know if this is necessary
+			oftp[n].refCount = 0;
+			oftp[n].mode = 0;
+			oftp[n].mptr = 0;
+			oftp[n].offset = 0;
+
+			p->fd[n] = &oftp[n]; // note that all fds are now pointing
+							  // to same location - don't know if this is necessary
 		}
 	}
 }
@@ -184,8 +187,9 @@ int main(int argc, char *argv[])
 
 	while (1)
 	{
-		printf("input command : [ ls | cd | pwd | mkdir | rmdir | creat | link ]\n");
-		printf("                [ unlink | quit ] ");
+		printf("Commands : [ ls | cd | pwd | mkdir | rmdir | creat | link ]\n");
+		printf("                [ unlink | symlink | chmod | cat | cp | quit ]\n");
+		printf("      \nHelpers: [pimap|pbmap|pfd|stat]   Enter Command: ");
 		fgets(line, 128, stdin);
 		line[strlen(line) - 1] = 0;
 
@@ -196,6 +200,10 @@ int main(int argc, char *argv[])
 		}
 		else {
 			strcpy(cmd, myargs[0]);
+			//if (strcpy(myargs[1], "") == 0 || strcpy(myargs[2], "") == 0) {
+				//printf("more arguments required\n");
+				//continue;
+			//}
 		}
 
 		if (strcmp(cmd, "ls") == 0)
@@ -218,6 +226,10 @@ int main(int argc, char *argv[])
 			mylink(myargs[1], myargs[2]);
 		if (strcmp(cmd, "unlink") == 0)
 			my_unlink(pathname);
+		if (strcmp(cmd, "symlink") == 0)
+			my_symlink(myargs[1], myargs[2]);
+		if (strcmp(cmd, "chmod") == 0)
+			my_chmod(myargs[1], myargs[2]);
 		if (strcmp(cmd, "pimap") == 0)
 			pimap();
 		if (strcmp(cmd, "pbmap") == 0)
@@ -225,8 +237,13 @@ int main(int argc, char *argv[])
 		if (strcmp(cmd, "stat") == 0)
 			my_stat(pathname);
 		if (strcmp(cmd, "cat") == 0)
-			my_stat(pathname);
-
+			my_cat(pathname);
+		if (strcmp(cmd, "pfd") == 0)
+			pfd();
+		if (strcmp(cmd, "cp") == 0)
+			my_cp(myargs[1], myargs[2]);
+		if (strcmp(cmd, "touch") == 0)
+			touch_file(pathname);
 		reset();
 	}
 }

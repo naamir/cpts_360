@@ -197,6 +197,10 @@ int remove_dir(char *path)
 		printf("ERROR: mip does not exist\n");
 		return 0;
 	}
+	//if (mip->refCount > 1) {
+		//printf("other processes are using this dir\n");
+		//return 0;
+	//}
 	//check if dir
 	if(!S_ISDIR(mip->INODE.i_mode)) {
 		printf("ERROR: %s is not a directory\n", path);

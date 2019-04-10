@@ -230,24 +230,23 @@ void remove_dir(char *path)
 	mip = iget(dev, ino);
 
 	//if the pointer is null then not exist
-	if(!mip)
-	{
+	if(!mip){
 		printf("ERROR: mip does not exist\n");
 		return;
 	}
-
+	if (mip->refCount > 1) {
+		printf("other processes are using this dir\n");
+		return;
+	}
 	//check if dir
-	if(!S_ISDIR(mip->INODE.i_mode))
-	{
+	if(!S_ISDIR(mip->INODE.i_mode)){
 		printf("ERROR: %s is not a directory\n", path);
 		return;
 	}
-
 	//check if empty, checks if the child dir has any children besides the . and ..
-	if(isEmptyDir(mip))
-	{
+	if(isEmptyDir(mip)){
 		printf("ERROR: directory not empty\n");
-		return 0;
+		return;
 	}
 
 	printf("Starting remove\n");
