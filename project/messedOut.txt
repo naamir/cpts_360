@@ -1,0 +1,71 @@
+yread: read 1024 char from file descriptor 0
+indir_lblk:266
+wrote 1024 char into file descriptor fd=1
+indir_lblk:267
+myread: read 1024 char from file descriptor 0
+indir_lblk:267
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:268
+myread: read 1024 char from file descriptor 0
+doubleindir_lblk:268
+outsidei13[0]
+i13[858]
+di_db1[0]
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:269
+myread: read 1024 char from file descriptor 0
+doubleindir_lblk:269
+outsidei13[858]
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:270
+myread: read 1024 char from file descriptor 0
+doubleindir_lblk:270
+outsidei13[858]
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:271
+myread: read 1024 char from file descriptor 0
+doubleindir_lblk:271
+outsidei13[858]
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:272
+myread: read 1024 char from file descriptor 0
+doubleindir_lblk:272
+outsidei13[858]
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:273
+myread: read 1024 char from file descriptor 0
+doubleindir_lblk:273
+outsidei13[858]
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:274
+myread: read 1024 char from file descriptor 0
+doubleindir_lblk:274
+outsidei13[858]
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:275
+myread: read 1024 char from file descriptor 0
+doubleindir_lblk:275
+outsidei13[858]
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:276
+myread: read 1024 char from file descriptor 0
+doubleindir_lblk:276
+outsidei13[858]
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:277
+myread: read 1024 char from file descriptor 0
+doubleindir_lblk:277
+outsidei13[858]
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:278
+myread: read 1024 char from file descriptor 0
+doubleindir_lblk:278
+outsidei13[858]
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:279
+myread: read 1024 char from file descriptor 0
+doubleindir_lblk:279
+outsidei13[858]
+wrote 1024 char into file descriptor fd=1
+doubleindir_lblk:280
+myread: read 1024 char from file d

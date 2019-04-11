@@ -49,6 +49,7 @@ int myread(int fd, char *buf, int nbytes)
         }
         else if (lblk >= 12 && lblk < 256 + 12) { 
             // indirect blocks
+            printf("indir_lblk:%i\n", lblk);
             i12 = fmip->INODE.i_block[12];
             get_block(fmip->dev, i12, indbuf);
             i_dbl = (int *)indbuf;
@@ -57,6 +58,7 @@ int myread(int fd, char *buf, int nbytes)
         }
         else {
             // double indirect blocks
+            printf("doubleindir_lblk:%i\n", lblk);
             i13 = fmip->INODE.i_block[13];
             get_block(fmip->dev, i13, dindbuf1);
             // cast the read buffer as an unsigned int ptr, so we have the start address of the array of block numbers
