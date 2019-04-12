@@ -244,6 +244,8 @@ int main(int argc, char *argv[])
 			my_cp(myargs[1], myargs[2]);
 		if (strcmp(cmd, "touch") == 0)
 			touch_file(pathname);
+		if (strcmp(cmd, "test") == 0)
+			testBlockval(myargs[1], myargs[2]);
 		reset();
 	}
 }

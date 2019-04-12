@@ -49,17 +49,18 @@ int myread(int fd, char *buf, int nbytes)
         }
         else if (lblk >= 12 && lblk < 256 + 12) { 
             // indirect blocks
-            printf("indir_lblk:%i\n", lblk);
+            //printf("indir_lblk:%i\n", lblk);
             i12 = fmip->INODE.i_block[12];
             get_block(fmip->dev, i12, indbuf);
             i_dbl = (int *)indbuf;
 
             pblk = i_dbl[lblk-12];
+            //printf("read_indr_pblk:%i\n", pblk);
         }
         else {
             // double indirect blocks
-            printf("doubleindir_lblk:%i\n", lblk);
             i13 = fmip->INODE.i_block[13];
+            //printf("i13val:%i\n", i13);
             get_block(fmip->dev, i13, dindbuf1);
             // cast the read buffer as an unsigned int ptr, so we have the start address of the array of block numbers
             // of the 1st level and they shall provide the block numbers to the next level
@@ -67,9 +68,12 @@ int myread(int fd, char *buf, int nbytes)
             lblk -= (256 + 12);
             // get the block number for the level 1 buffer
             di_nb1 = di_db1[lblk / 256];  // this is the BLOCK - say it one more time
+            //printf("di_nb1[%i]=%i\n", lblk / 256, di_nb1);
             get_block(fmip->dev, di_nb1, dindbuf2);
             di_db2 = (int *)dindbuf2;
+            //printf("di_db2[%i] = %i\n", lblk%256, di_db2[lblk%256]);
             pblk = di_db2[lblk%256];
+            //printf("read_dindr_pblk:%i\n", pblk);
         }
 
         // get the data block into readbuf[BLKSIZE]
