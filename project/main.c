@@ -58,13 +58,13 @@ int tokArguments(char *mystr)
 	return i;
 }
 
-int init()
+int initfs()
 {
 	int i, n;
 	MINODE *mip;
 	PROC *p;
 
-	printf("init()\n");
+	printf("initfs()\n");
 
 	for (i = 0; i < NMINODE; i++)
 	{
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
 	}
 	dev = fd;
 
-	init();
+	initfs();
 	mount_root();
 	printf("root refCount = %d\n", root->refCount);
 
